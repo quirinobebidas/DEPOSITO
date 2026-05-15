@@ -1,0 +1,400 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Quirino Bebidas — Admin</title>
+<script src="https://cdn.sheetjs.com/xlsx-0.20.1/package/dist/xlsx.full.min.js"></script>
+<style>
+@import url('https://fonts.googleapis.com/css2?family=Bebas+Neue&family=DM+Sans:wght@300;400;500;700&display=swap');
+:root{
+  --bg:#0a0a0f;--sur:#13131a;--sur2:#1c1c28;--bor:#2a2a3d;
+  --acc:#e8c842;--txt:#f0f0f5;--mut:#7a7a9a;--grn:#27ae60;--red:#c0392b;
+}
+*{box-sizing:border-box;margin:0;padding:0}
+body{background:var(--bg);color:var(--txt);font-family:'DM Sans',sans-serif;min-height:100vh}
+
+header{background:var(--sur);border-bottom:2px solid var(--acc);padding:16px 32px;display:flex;align-items:center;gap:16px}
+.logo{font-family:'Bebas Neue',sans-serif;font-size:1.8rem;letter-spacing:3px;color:var(--acc);line-height:1}
+.logo span{color:var(--txt)}
+.admin-badge{background:rgba(232,200,66,.15);border:1.5px solid var(--acc);color:var(--acc);font-size:.75rem;font-weight:700;letter-spacing:2px;padding:4px 12px;border-radius:6px}
+.back-btn{margin-left:auto;background:transparent;border:1.5px solid var(--bor);border-radius:8px;color:var(--mut);padding:7px 14px;font-size:.82rem;cursor:pointer;font-family:'DM Sans',sans-serif;text-decoration:none;display:inline-flex;align-items:center;gap:6px}
+.back-btn:hover{border-color:var(--txt);color:var(--txt)}
+
+main{max-width:800px;margin:0 auto;padding:36px 24px}
+
+h1{font-family:'Bebas Neue',sans-serif;font-size:2rem;letter-spacing:2px;color:var(--acc);margin-bottom:8px}
+.subtitle{color:var(--mut);font-size:.9rem;margin-bottom:36px;line-height:1.5}
+
+.step{background:var(--sur);border:1.5px solid var(--bor);border-radius:14px;padding:24px;margin-bottom:20px;transition:border-color .2s}
+.step.active{border-color:var(--acc)}
+.step.done{border-color:var(--grn)}
+.step-header{display:flex;align-items:center;gap:14px;margin-bottom:16px}
+.step-num{width:36px;height:36px;border-radius:50%;background:var(--bor);color:var(--mut);font-family:'Bebas Neue',sans-serif;font-size:1.2rem;display:flex;align-items:center;justify-content:center;flex-shrink:0;transition:all .2s}
+.step.active .step-num{background:var(--acc);color:#000}
+.step.done .step-num{background:var(--grn);color:#fff}
+.step-title{font-weight:700;font-size:1rem}
+.step-desc{font-size:.82rem;color:var(--mut);line-height:1.4}
+
+/* DROP ZONE */
+.dropzone{
+  border:2px dashed var(--bor);border-radius:10px;
+  padding:32px 20px;text-align:center;cursor:pointer;
+  transition:all .2s;position:relative;
+}
+.dropzone:hover,.dropzone.over{border-color:var(--acc);background:rgba(232,200,66,.04)}
+.dropzone.loaded{border-color:var(--grn);background:rgba(39,174,96,.06)}
+.dropzone input[type=file]{position:absolute;inset:0;opacity:0;cursor:pointer;width:100%;height:100%}
+.dz-icon{font-size:2.5rem;margin-bottom:10px}
+.dz-label{font-size:.88rem;color:var(--mut)}
+.dz-label strong{color:var(--txt);display:block;margin-bottom:4px;font-size:.95rem}
+.dz-status{font-size:.82rem;font-weight:600;margin-top:8px}
+.dz-status.ok{color:var(--grn)}
+.dz-status.err{color:var(--red)}
+
+/* LOG */
+#log{background:var(--sur2);border:1px solid var(--bor);border-radius:10px;padding:16px;margin-top:20px;display:none;max-height:260px;overflow-y:auto;font-family:monospace;font-size:.8rem;line-height:1.6}
+.log-ok{color:var(--grn)}
+.log-err{color:var(--red)}
+.log-info{color:var(--mut)}
+.log-warn{color:var(--acc)}
+
+/* BUTTONS */
+.btn-row{display:flex;gap:12px;margin-top:24px;flex-wrap:wrap}
+.btn{padding:12px 28px;border:none;border-radius:9px;font-family:'DM Sans',sans-serif;font-size:.95rem;font-weight:700;cursor:pointer;transition:all .2s}
+.btn:disabled{opacity:.35;cursor:not-allowed}
+.btn-primary{background:var(--acc);color:#000}
+.btn-primary:hover:not(:disabled){background:#f0d040}
+.btn-ghost{background:transparent;color:var(--mut);border:1.5px solid var(--bor)}
+.btn-ghost:hover:not(:disabled){border-color:var(--txt);color:var(--txt)}
+
+/* RESULT */
+#result{display:none;background:var(--sur);border:2px solid var(--grn);border-radius:14px;padding:24px;margin-top:24px;text-align:center}
+#result h2{font-family:'Bebas Neue',sans-serif;font-size:1.8rem;color:var(--grn);margin-bottom:8px}
+#result p{color:var(--mut);font-size:.88rem;margin-bottom:16px}
+.stats-row{display:flex;gap:12px;justify-content:center;flex-wrap:wrap;margin-bottom:20px}
+.stat{background:var(--sur2);border:1px solid var(--bor);border-radius:10px;padding:12px 20px;text-align:center}
+.stat strong{display:block;font-family:'Bebas Neue',sans-serif;font-size:1.6rem;color:var(--acc)}
+.stat span{font-size:.75rem;color:var(--mut)}
+
+::-webkit-scrollbar{width:4px}
+::-webkit-scrollbar-track{background:var(--bg)}
+::-webkit-scrollbar-thumb{background:var(--bor);border-radius:3px}
+</style>
+</head>
+<body>
+
+<header>
+  <div class="logo">QUIRINO<span>BEBIDAS</span></div>
+  <span class="admin-badge">ADMIN</span>
+  <a href="index.html" class="back-btn">← Volver a la app</a>
+</header>
+
+<main>
+  <h1>Actualizar Productos</h1>
+  <p class="subtitle">Subí los dos archivos Excel para actualizar el catálogo del depósito.<br>Los datos se guardan localmente y se aplican de inmediato en la app.</p>
+
+  <!-- PASO 1 -->
+  <div class="step active" id="step1">
+    <div class="step-header">
+      <div class="step-num">1</div>
+      <div>
+        <div class="step-title">Archivo CAMPAÑA CPG</div>
+        <div class="step-desc">Contiene las publicaciones de Mercado Libre (MLAs, títulos y URLs)</div>
+      </div>
+    </div>
+    <div class="dropzone" id="dz1" ondragover="dzOver(event,'dz1')" ondragleave="dzLeave('dz1')" ondrop="dzDrop(event,'dz1','campana')">
+      <input type="file" accept=".xlsx,.xls" onchange="fileSelected(this,'dz1','campana')">
+      <div class="dz-icon">📊</div>
+      <div class="dz-label"><strong>CAMPAÑA_CPG.xlsx</strong>Arrastrá el archivo o hacé clic para seleccionar</div>
+      <div class="dz-status" id="st1"></div>
+    </div>
+  </div>
+
+  <!-- PASO 2 -->
+  <div class="step" id="step2">
+    <div class="step-header">
+      <div class="step-num">2</div>
+      <div>
+        <div class="step-title">Archivo COMPOSICIONES</div>
+        <div class="step-desc">Contiene todos los SKUs y sus componentes de armado</div>
+      </div>
+    </div>
+    <div class="dropzone" id="dz2" ondragover="dzOver(event,'dz2')" ondragleave="dzLeave('dz2')" ondrop="dzDrop(event,'dz2','compo')">
+      <input type="file" accept=".xlsx,.xls" onchange="fileSelected(this,'dz2','compo')">
+      <div class="dz-icon">📦</div>
+      <div class="dz-label"><strong>Composiciones_Quirino_Bebidas.xlsx</strong>Arrastrá el archivo o hacé clic para seleccionar</div>
+      <div class="dz-status" id="st2"></div>
+    </div>
+  </div>
+
+  <!-- PASO 3 -->
+  <div class="step" id="step3">
+    <div class="step-header">
+      <div class="step-num">3</div>
+      <div>
+        <div class="step-title">Procesar y guardar</div>
+        <div class="step-desc">Cruza los datos, genera el catálogo y lo guarda en la app</div>
+      </div>
+    </div>
+    <div class="btn-row">
+      <button class="btn btn-primary" id="btnProcess" onclick="processFiles()" disabled>⚡ Procesar y actualizar</button>
+      <button class="btn btn-ghost" onclick="resetAll()">↺ Limpiar</button>
+    </div>
+    <div id="log"></div>
+  </div>
+
+  <div id="result">
+    <h2>✓ Actualización completa</h2>
+    <p>El catálogo fue procesado y guardado. La app del depósito ya tiene los datos nuevos.</p>
+    <div class="stats-row">
+      <div class="stat"><strong id="rTotal">0</strong><span>productos totales</span></div>
+      <div class="stat"><strong id="rCombos">0</strong><span>combos</span></div>
+      <div class="stat"><strong id="rUnit">0</strong><span>unitarios</span></div>
+      <div class="stat"><strong id="rMla">0</strong><span>con foto ML</span></div>
+    </div>
+    <a href="index.html" class="btn btn-primary" style="text-decoration:none;display:inline-block">← Ir a la app del depósito</a>
+  </div>
+</main>
+
+<script>
+let campanaWB = null, compoWB = null;
+
+// ── DRAG & DROP ───────────────────────────────────────────────
+function dzOver(e, id) { e.preventDefault(); document.getElementById(id).classList.add('over'); }
+function dzLeave(id)   { document.getElementById(id).classList.remove('over'); }
+function dzDrop(e, id, type) {
+  e.preventDefault();
+  dzLeave(id);
+  const file = e.dataTransfer.files[0];
+  if (file) loadFile(file, id, type);
+}
+function fileSelected(input, id, type) {
+  const file = input.files[0];
+  if (file) loadFile(file, id, type);
+}
+
+function loadFile(file, dzId, type) {
+  const st = document.getElementById(dzId === 'dz1' ? 'st1' : 'st2');
+  st.textContent = 'Leyendo...';
+  st.className = 'dz-status';
+  const reader = new FileReader();
+  reader.onload = function(e) {
+    try {
+      const wb = XLSX.read(e.target.result, { type: 'array' });
+      if (type === 'campana') {
+        const needed = ['Publi nuevas', 'EAN PROPIOS', 'Activos Meli', 'FULL'];
+        const missing = needed.filter(s => !wb.SheetNames.includes(s));
+        if (missing.length) throw new Error(`Faltan hojas: ${missing.join(', ')}`);
+        campanaWB = wb;
+        st.textContent = `✓ ${file.name} cargado`;
+        st.className = 'dz-status ok';
+        document.getElementById('dz1').classList.add('loaded');
+        document.getElementById('step1').classList.remove('active');
+        document.getElementById('step1').classList.add('done');
+        document.getElementById('step2').classList.add('active');
+      } else {
+        if (!wb.SheetNames.includes('datos')) throw new Error('No se encontró la hoja "datos"');
+        compoWB = wb;
+        st.textContent = `✓ ${file.name} cargado`;
+        st.className = 'dz-status ok';
+        document.getElementById('dz2').classList.add('loaded');
+        document.getElementById('step2').classList.remove('active');
+        document.getElementById('step2').classList.add('done');
+        document.getElementById('step3').classList.add('active');
+      }
+      checkReady();
+    } catch(err) {
+      st.textContent = '✗ ' + err.message;
+      st.className = 'dz-status err';
+    }
+  };
+  reader.readAsArrayBuffer(file);
+}
+
+function checkReady() {
+  document.getElementById('btnProcess').disabled = !(campanaWB && compoWB);
+}
+
+// ── PROCESS ───────────────────────────────────────────────────
+function log(msg, type='info') {
+  const el = document.getElementById('log');
+  el.style.display = 'block';
+  const line = document.createElement('div');
+  line.className = 'log-' + type;
+  line.textContent = msg;
+  el.appendChild(line);
+  el.scrollTop = el.scrollHeight;
+}
+
+function sheetToArr(wb, sheetName) {
+  const ws = wb.Sheets[sheetName];
+  if (!ws) return [];
+  return XLSX.utils.sheet_to_json(ws, { header: 1, defval: '' });
+}
+
+function toInt(v) {
+  try { return v !== '' ? parseInt(parseFloat(String(v).replace(',','.'))) : null; } catch { return null; }
+}
+function mlaUrl(mla) {
+  return mla ? `https://articulo.mercadolibre.com.ar/${mla.slice(0,3)}-${mla.slice(3)}` : '';
+}
+
+async function processFiles() {
+  document.getElementById('btnProcess').disabled = true;
+  document.getElementById('log').innerHTML = '';
+  document.getElementById('result').style.display = 'none';
+
+  log('Iniciando procesamiento...', 'info');
+  await sleep(50);
+
+  try {
+    // 1. MLA info
+    log('Leyendo publicaciones ML (Activos Meli + FULL)...', 'info');
+    const mlaInfo = {};
+    for (const [sheet, start] of [['Activos Meli', 3], ['FULL', 5]]) {
+      const rows = sheetToArr(campanaWB, sheet);
+      for (let i = start; i < rows.length; i++) {
+        const r = rows[i];
+        const mla = String(r[0]||'').trim();
+        const title = String(r[4]||'').trim();
+        if (mla.startsWith('MLA') && title && title !== 'None' && !mlaInfo[mla])
+          mlaInfo[mla] = { title, url: mlaUrl(mla) };
+      }
+    }
+    log(`  ✓ ${Object.keys(mlaInfo).length} publicaciones ML encontradas`, 'ok');
+    await sleep(50);
+
+    // 2. SKU → MLA + títulos de Publi nuevas
+    log('Leyendo SKU-MLA y títulos (Publi nuevas + EAN PROPIOS)...', 'info');
+    const skuMla = {}, skuTitulo = {};
+    const publiRows = sheetToArr(campanaWB, 'Publi nuevas');
+    for (let i = 2; i < publiRows.length; i++) {
+      const r = publiRows[i];
+      const titulo = String(r[1]||'').trim();
+      const sku = toInt(r[2]);
+      let mlaRaw = String(r[3]||'').trim();
+      if (titulo && sku) skuTitulo[sku] = titulo;
+      if (mlaRaw && sku) {
+        if (/^\d+$/.test(mlaRaw)) mlaRaw = 'MLA' + mlaRaw;
+        if (mlaRaw.startsWith('MLA') && !skuMla[sku]) skuMla[sku] = mlaRaw;
+      }
+    }
+    const eanRows = sheetToArr(campanaWB, 'EAN PROPIOS');
+    for (let i = 1; i < eanRows.length; i++) {
+      const r = eanRows[i];
+      const sku = toInt(r[0]); let mlaRaw = String(r[1]||'').trim();
+      if (!sku || !mlaRaw) continue;
+      if (/^\d+$/.test(mlaRaw)) mlaRaw = 'MLA' + mlaRaw;
+      if (mlaRaw.startsWith('MLA') && !skuMla[sku]) skuMla[sku] = mlaRaw;
+    }
+    log(`  ✓ ${Object.keys(skuMla).length} pares SKU-MLA | ${Object.keys(skuTitulo).length} títulos de Publi nuevas`, 'ok');
+    await sleep(50);
+
+    // Invertir título→MLA
+    const titleToMla = {};
+    for (const [m, info] of Object.entries(mlaInfo)) titleToMla[info.title.toUpperCase()] = m;
+
+    // 3. Composiciones
+    log('Leyendo composiciones...', 'info');
+    const comps = {}, compNombre = {}, codMat = {};
+    const compoRows = sheetToArr(compoWB, 'datos');
+    let skipped = 0;
+    for (let i = 1; i < compoRows.length; i++) {
+      const r = compoRows[i];
+      const sku = toInt(r[0]);
+      const cod = r[1] !== '' ? String(toInt(r[1])) : null;
+      const nombre = String(r[2]||'').trim();
+      const qty = toInt(r[3]) || 1;
+      const nsku = String(r[4]||'').trim();
+      if (!sku || !cod || !nombre || nombre === 'None') { skipped++; continue; }
+      if (!comps[sku]) comps[sku] = [];
+      comps[sku].push({ cod, nombre, cantidad: qty });
+      if (nsku && nsku !== 'None' && !compNombre[sku]) compNombre[sku] = nsku;
+      if (!codMat[cod]) codMat[cod] = nombre;
+    }
+    log(`  ✓ ${Object.keys(comps).length} SKUs | ${Object.keys(codMat).length} materias primas | ${skipped} filas vacías ignoradas`, 'ok');
+    await sleep(50);
+
+    // 4. Build records
+    log('Cruzando y construyendo catálogo...', 'info');
+    const records = [], seen = new Set();
+    let sinNombre = 0;
+
+    for (const [skuStr, items] of Object.entries(comps)) {
+      const sku = parseInt(skuStr);
+      let mla = skuMla[sku] || '';
+      const info = mlaInfo[mla] || {};
+      const title = info.title || compNombre[sku] || skuTitulo[sku] || '';
+      if (!title || title === 'None') { sinNombre++; continue; }
+      if (!mla) {
+        const tu = title.toUpperCase();
+        for (const [t, m] of Object.entries(titleToMla)) {
+          if (tu === t || tu.includes(t) || t.includes(tu)) { mla = m; break; }
+        }
+      }
+      records.push({ sku, mla, title, url: mla ? mlaUrl(mla) : '', tipo: 'combo', items });
+      seen.add(sku);
+    }
+
+    // Unitarios
+    for (const [cod, nombre] of Object.entries(codMat)) {
+      const codInt = parseInt(cod);
+      if (seen.has(codInt) || !nombre || nombre === 'None') continue;
+      let mla = '';
+      const nu = nombre.toUpperCase();
+      for (const [t, m] of Object.entries(titleToMla)) {
+        if (nu === t || nu.includes(t) || t.includes(nu)) { mla = m; break; }
+      }
+      records.push({ sku: codInt, mla, title: nombre, url: mla ? mlaUrl(mla) : '', tipo: 'unitario', items: [{ cod, nombre, cantidad: 1 }] });
+    }
+
+    records.sort((a, b) => a.sku - b.sku);
+
+    if (sinNombre > 0) log(`  ⚠ ${sinNombre} SKUs sin nombre ignorados (agregalos a Publi nuevas)`, 'warn');
+    log(`  ✓ ${records.length} productos generados (${records.filter(r=>r.tipo==='combo').length} combos + ${records.filter(r=>r.tipo==='unitario').length} unitarios)`, 'ok');
+    await sleep(50);
+
+    // 5. Guardar
+    log('Guardando en la app...', 'info');
+    localStorage.setItem('quirino_data', JSON.stringify(records));
+    localStorage.setItem('quirino_sync', new Date().toISOString());
+    log('  ✓ Datos guardados correctamente', 'ok');
+    await sleep(100);
+
+    log('', 'info');
+    log('✓ ¡Actualización completada!', 'ok');
+
+    // Mostrar resultado
+    document.getElementById('rTotal').textContent = records.length.toLocaleString('es');
+    document.getElementById('rCombos').textContent = records.filter(r=>r.tipo==='combo').length.toLocaleString('es');
+    document.getElementById('rUnit').textContent = records.filter(r=>r.tipo==='unitario').length.toLocaleString('es');
+    document.getElementById('rMla').textContent = records.filter(r=>r.mla).length.toLocaleString('es');
+    document.getElementById('result').style.display = 'block';
+    document.getElementById('step3').classList.add('done');
+
+  } catch(err) {
+    log('✗ Error: ' + err.message, 'err');
+    console.error(err);
+    document.getElementById('btnProcess').disabled = false;
+  }
+}
+
+function sleep(ms) { return new Promise(r => setTimeout(r, ms)); }
+
+function resetAll() {
+  campanaWB = null; compoWB = null;
+  ['step1','step2','step3'].forEach(id => {
+    document.getElementById(id).classList.remove('done','active');
+  });
+  document.getElementById('step1').classList.add('active');
+  ['dz1','dz2'].forEach(id => document.getElementById(id).classList.remove('loaded','over'));
+  ['st1','st2'].forEach(id => { document.getElementById(id).textContent = ''; });
+  document.getElementById('log').innerHTML = '';
+  document.getElementById('log').style.display = 'none';
+  document.getElementById('result').style.display = 'none';
+  document.getElementById('btnProcess').disabled = true;
+}
+</script>
+</body>
+</html>
